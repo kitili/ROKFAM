@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Rokfam Hardware</title>
+    <!-- Link to shared stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN for sales/profit chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Dashboard Header -->
+        <header class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <p>Full control: manage products, view profits, and respond to seller requests.</p>
+        </header>
+
+        <!-- Sales/Profit Summary -->
+        <section class="sales-summary">
+            <h2>All-Time Summary</h2>
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>Total Sales</h3>
+                    <p id="adminTotalSales">KES 320,000</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Profits</h3>
+                    <p id="adminProfits">KES 80,000</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Orders</h3>
+                    <p id="adminOrders">120</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sales/Profit Chart -->
+        <section class="sales-chart">
+            <h2>Sales & Profits Chart</h2>
+            <canvas id="adminChart" height="120"></canvas>
+        </section>
+
+        <!-- Add New Product Form -->
+        <section class="add-product">
+            <h2>Add New Product</h2>
+            <form id="addProductForm" action="#" method="post" onsubmit="addProduct(event)">
+                <input type="text" name="product-name" placeholder="Product Name" required>
+                <input type="number" name="product-price" placeholder="Price (KES)" required>
+                <input type="number" name="product-stock" placeholder="Stock Quantity" required>
+                <button type="submit" class="btn">Add Product</button>
+            </form>
+        </section>
+
+        <!-- Product Management Table -->
+        <section class="product-list">
+            <h2>All Products</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Sold</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="adminProductTableBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Seller Requests/Comments -->
+        <section class="seller-requests">
+            <h2>Seller Requests & Comments</h2>
+            <ul id="requestsList">
+                <!-- Populated by JS -->
+            </ul>
+        </section>
+
+        <!-- Navigation link back to landing page -->
+        <div style="text-align:center;margin-top:32px;">
+            <a href="index.html" class="btn">Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+    // Dummy data for demonstration
+    let adminProducts = [
+        { name: 'Hammer', price: 500, stock: 15, sold: 40 },
+        { name: 'Screwdriver Set', price: 1200, stock: 8, sold: 25 },
+        { name: 'Paint Brush', price: 300, stock: 2, sold: 55 }
+    ];
+    let adminSales = [20000, 25000, 30000, 40000, 35000, 50000, 60000]; // 7 months
+    let adminProfits = [5000, 7000, 8000, 12000, 9000, 15000, 20000];
+    let adminOrders = 120;
+    let sellerRequests = [
+        { product: 'Paint Brush', type: 'Restock', message: 'Stock almost finished, please restock soon.' },
+        { product: 'Hammer', type: 'Comment', message: 'Customer requested a heavier version.' }
+    ];
+
+    // Render product table
+    function renderAdminProducts() {
+        const tbody = document.getElementById('adminProductTableBody');
+        tbody.innerHTML = '';
+        adminProducts.forEach((product, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${product.name}</td>
+                <td>KES ${product.price}</td>
+                <td>${product.stock}</td>
+                <td>${product.sold}</td>
+                <td>
+                    <button class="btn small" onclick="editProduct(${idx})">Edit</button>
+                    <button class="btn small danger" onclick="deleteProduct(${idx})">Delete</button>
+                    <button class="btn small warning" onclick="restockProduct(${idx})">Restock</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Add new product
+    function addProduct(e) {
+        e.preventDefault();
+        const form = document.getElementById('addProductForm');
+        const name = form['product-name'].value;
+        const price = parseInt(form['product-price'].value);
+        const stock = parseInt(form['product-stock'].value);
+        adminProducts.push({ name, price, stock, sold: 0 });
+        renderAdminProducts();
+        form.reset();
+        alert('Product added!');
+    }
+
+    // Edit product (demo: just alert)
+    function editProduct(idx) {
+        alert('Edit product: ' + adminProducts[idx].name);
+    }
+
+    // Delete product
+    function deleteProduct(idx) {
+        if (confirm('Are you sure you want to delete ' + adminProducts[idx].name + '?')) {
+            adminProducts.splice(idx, 1);
+            renderAdminProducts();
+        }
+    }
+
+    // Restock product (demo: just alert)
+    function restockProduct(idx) {
+        alert('Restock order placed for: ' + adminProducts[idx].name);
+    }
+
+    // Render seller requests/comments
+    function renderRequests() {
+        const ul = document.getElementById('requestsList');
+        ul.innerHTML = '';
+        sellerRequests.forEach(req => {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${req.type} (${req.product}):</strong> ${req.message}`;
+            ul.appendChild(li);
+        });
+    }
+
+    // Render sales/profit chart
+    let adminChart;
+    function renderAdminChart() {
+        if (adminChart) adminChart.destroy();
+        const ctx = document.getElementById('adminChart').getContext('2d');
+        adminChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                datasets: [
+                    {
+                        label: 'Sales (KES)',
+                        data: adminSales,
+                        backgroundColor: 'rgba(245, 194, 66, 0.3)',
+                        borderColor: '#f5c242',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: 'Profits (KES)',
+                        data: adminProfits,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: '#3498db',
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true },
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // Initial render
+    renderAdminProducts();
+    renderRequests();
+    renderAdminChart();
+    </script>
+</body>
+</html> 

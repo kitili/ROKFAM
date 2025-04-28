@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard - Rokfam Hardware</title>
+    <!-- Link to shared stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN for sales chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Welcome/Overview Section -->
+        <header class="dashboard-header">
+            <h1>Seller Dashboard</h1>
+            <p>Track your weekly sales, manage your stock, and communicate with the admin.</p>
+        </header>
+
+        <!-- Weekly Summary Cards -->
+        <section class="sales-summary">
+            <h2>This Week's Summary</h2>
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>Stock Sold</h3>
+                    <p id="stockSold">0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Cash at Hand</h3>
+                    <p id="cashAtHand">KES 0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Weekly Sales Chart -->
+        <section class="sales-chart">
+            <h2>Weekly Sales Chart</h2>
+            <canvas id="weeklyChart" height="120"></canvas>
+        </section>
+
+        <!-- Product List with Record Sale and Request Restock/Comment -->
+        <section class="product-list">
+            <h2>Your Assigned Products</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Record Sale</th>
+                        <th>Request/Comment</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Navigation link back to landing page -->
+        <div style="text-align:center;margin-top:32px;">
+            <a href="index.html" class="btn">Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+    // Dummy product and sales data
+    const products = [
+        { name: 'Hammer', price: 500, stock: 15, sold: 0 },
+        { name: 'Screwdriver Set', price: 1200, stock: 8, sold: 0 },
+        { name: 'Paint Brush', price: 300, stock: 2, sold: 0 }
+    ];
+    let weeklySales = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
+    let cashAtHand = 0;
+    let stockSold = 0;
+
+    // Render product table
+    function renderProducts() {
+        const tbody = document.getElementById('productTableBody');
+        tbody.innerHTML = '';
+        products.forEach((product, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${product.name}</td>
+                <td>KES ${product.price}</td>
+                <td id="stock-${idx}">${product.stock}</td>
+                <td>
+                    <input type="number" min="1" max="${product.stock}" value="1" id="qty-${idx}" style="width:50px;">
+                    <button class="btn small" onclick="recordSale(${idx})">Sell</button>
+                </td>
+                <td>
+                    <button class="btn small warning" onclick="requestRestock(${idx})">Request Restock</button>
+                    <button class="btn small" onclick="leaveComment(${idx})">Comment</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Record a sale for a product
+    function recordSale(idx) {
+        const qtyInput = document.getElementById(`qty-${idx}`);
+        let qty = parseInt(qtyInput.value);
+        if (isNaN(qty) || qty < 1) qty = 1;
+        if (qty > products[idx].stock) qty = products[idx].stock;
+        products[idx].stock -= qty;
+        products[idx].sold += qty;
+        stockSold += qty;
+        cashAtHand += qty * products[idx].price;
+        // Add to today's sales (simulate as last day of week)
+        weeklySales[6] += qty * products[idx].price;
+        updateSummary();
+        renderProducts();
+        updateChart();
+    }
+
+    // Update summary cards
+    function updateSummary() {
+        document.getElementById('stockSold').textContent = stockSold;
+        document.getElementById('cashAtHand').textContent = 'KES ' + cashAtHand;
+    }
+
+    // Request restock
+    function requestRestock(idx) {
+        alert(`Restock request sent for ${products[idx].name}.`);
+    }
+
+    // Leave comment
+    function leaveComment(idx) {
+        const comment = prompt(`Leave a comment for admin about ${products[idx].name}:`);
+        if (comment) {
+            alert('Comment sent to admin: ' + comment);
+        }
+    }
+
+    // Chart.js - Weekly sales chart
+    let chart;
+    function updateChart() {
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    label: 'KES Sold',
+                    data: weeklySales,
+                    backgroundColor: '#f5c242',
+                    borderColor: '#e6b12a',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // Initial render
+    renderProducts();
+    updateSummary();
+    updateChart();
+    </script>
+</body>
+</html> 
